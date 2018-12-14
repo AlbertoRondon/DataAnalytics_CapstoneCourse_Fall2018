@@ -2,48 +2,50 @@
 
 Ryerson University 
 
-Alberto Rondon
+Data Analytics: Capstone Course / Fall 2018 :: Predicting Number of Dengue Infections Using Historical Climate Data  Campinas, Brazil.
 
-:: Data Analytics: Capstone Course / Fall 2018 
-:: Predicting Number of Dengue Infections Using Historical Climate Data  Campinas, Brazil.
 
-## Please Install The Fopllowing Packages ##
+:: General Setup ::
 
-#grep Library
-install.packages("grep")
-library(grep)
+Please Install The Following Packages:
 
-#Forecast Library
-install.packages("forecast")
+```{r setup, include=FALSE}
+
+## Forecast Library
+#install.packages("forecast")
 library (forecast)
-## TTR Library
-install.packages("TTR")
+#install.packages("TTR")
 library(TTR)
-## Car Library
-install.packages("car")
+#install.packages("car")
 library (car)
-## MASS Library
-install.packages ("MASS")
+#install.packages ("MASS")
 library (MASS)
-##DAAG Library
-install.packages ("DAAG")
+#install.packages ("DAAG")
 library (DAAG)
+```
 
 :: Loading Dataset ::
+
+```{r }
+setwd("/Users/albertorondon/desktop/capstone")
+
 
 #Regular Dataset#
 Dengue <- read.table("dengue_dataset.csv", header = TRUE, sep = ",")
 
 #Dataset - Log of Case_Conf#
+
 Dengue_log <- read.table("dengue_dataset.csv", header = TRUE, sep = ",")
 Dengue_log$Cases_conf <- log(Dengue_log$Cases_conf)
 Dengue_log$Cases_conf <- as.character(Dengue_log$Cases_conf)
 Dengue_log$Cases_conf[Dengue_log$Cases_conf == "-Inf"] <- "0"
 Dengue_log$Cases_conf <- as.numeric(Dengue_log$Cases_conf)
 
-
+```
 
 ::Evaluation Of Correlation :: 
+
+```{r }
 
 #Evaluation of correlation - Dengue - Spearman Method:
 
@@ -51,83 +53,101 @@ Dengue$Quarter <- as.numeric (Dengue$Quarter)
 setcor_dengue <- Dengue[,2:length(Dengue)] 
 round (cor(setcor_dengue, method = "spearman"),2)
 
+```
 
 :: Exploration of the Lag Span ::
 
-##Generate Time Series
+```{r }
 
+##Generate Time Series
 actual_cases_timeseries <- ts(Dengue$Cases_conf)
 plot(actual_cases_timeseries)
 
 #Autocorrelation Function (ACF)
-
 cases_acf <- acf (actual_cases_timeseries, lag = length(actual_cases_timeseries)-1, pl = TRUE)
 
 ## Partial Autocorrelation Function (PACF)
-
 cases_acf <- pacf (actual_cases_timeseries, lag = length (actual_cases_timeseries)-1, pl = TRUE)
 
+```
 
 :: Denoting Autoregression of Dengue Cases ::
 
+```{r }
 ##Evaluating appropiate ARIMA model
-
 auto.arima(actual_cases_timeseries)
-
+```
 
 :: Fitting The Model ::
 
+```{r }
 #General Multiple Linear Regression#
-
-Dengue_model <- lm (Cases_conf ~ Rain + Min_temp, data = Dengue)
+Dengue_model <- lm (Cases_conf ~ Rain + Min_temp + Avg_temp + Max_temp + Quarter, data = Dengue)
 summary(Dengue_model)
+```
 
+
+```{r }
 #General Multiple Linear Regression - Log Cases#
-Dengue_model_log <- lm (Cases_conf ~ Rain  + Min_temp, data = Dengue_log)
+Dengue_model_log <- lm (Cases_conf ~ Rain + Min_temp + Avg_temp + Max_temp + Quarter , data = Dengue_log)
 summary(Dengue_model_log)
+
+```
+
+
+:: Dimensionality Reduction ::
+
+```{r }
+#Fitting The Model - DIMENSIONALITY REDUCTION 1 #
+Dengue_model_log_2 <- lm (Cases_conf ~ Rain + Min_temp + Avg_temp + Max_temp, data = Dengue_log)
+summary(Dengue_model_log_2)
+
+#Fitting The Model - DIMENSIONALITY REDUCTION 2 #
+Dengue_model_log_3 <- lm (Cases_conf ~ Rain + Min_temp + Max_temp, data = Dengue_log)
+summary(Dengue_model_log_3)
+
+#Fitting The Model - DIMENSIONALITY REDUCTION 3 #
+Dengue_model_log_4 <- lm (Cases_conf ~ Rain + Min_temp, data = Dengue_log)
+summary(Dengue_model_log_4)
+
+#Fitting The Model - DIMENSIONALITY REDUCTION 4 #
+Dengue_model_log_4 <- lm (Cases_conf ~ Rain, data = Dengue_log)
+summary(Dengue_model_log_4)
+```
+
 
 :: Exploring The Residuals ::
 
+```{r }
 #Residuals - General Multiple Linear Regression #
 par(mfrow = c(2, 2))
 plot(Dengue_model)
+```
 
 
+```{r }
 #Residuals - General Multiple Linear Regression - Log Cases #
 par(mfrow = c(2, 2))
 plot(Dengue_model_log)
 
+```
 
-:: 10 Folds Cross-Validation ::
+
+:: Cross Validation ::
+
+```{r }
 
 #General Multiple Linear Regression#
 cv.lm(Dengue, Dengue_model, m=10)
-#Standard Error: 381.9 
 
+```
+
+```{r }
 #General Multiple Linear Regression - Log Cases#
 cv.lm(Dengue_log, Dengue_model_log, m=10)
-#Standard Error: 0.45
+
+```
 
 
-:: DIMENSIONALITY REDUCTION  ::
-   10 Folds Cross-Validation 
 
-
-#Fitting The Model - DIMENSIONALITY REDUCTION 1 #
-Dengue_model_log_2 <- lm (Cases_conf ~ Rain + Min_temp, data = Dengue_log)
-
-
-#Fitting The Model - DIMENSIONALITY REDUCTION 2 #
-Dengue_model_log_3 <- lm (Cases_conf ~ Rain + Min_temp, data = Dengue_log)
-
-
-#General Multiple Linear Regression - Log Cases - Iteration 1#
-
-cv.lm(Dengue_log, Dengue_model_log_2, m=10)
-#Standard Error: 0.46
-
-
-#General Multiple Linear Regression - Log Cases - Iteration 2#
-cv.lm(Dengue_log, Dengue_model_log_3, m=10)
-#Standard Error: 0.46
 
